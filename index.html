@@ -309,13 +309,23 @@ let prepRemaining = 0;
       }, 1000);
     }
 
-    function updateDisplay() {
-  	const absTime = Math.abs(timeLeft);
-  	const m = String(Math.floor(absTime / 60)).padStart(2, '0');
-  	const s = String(absTime % 60).padStart(2, '0');
-  	const prefix = timeLeft < 0 ? '-' : '';
-  	document.getElementById("countdownDisplay").innerHTML = `<div style='font-size: 1.5rem;'>Tiempo restante</div><div>${prefix}${m}:${s}</div>`;
+  function updateDisplay() {
+    const absTime = Math.abs(timeLeft);
+    const m = String(Math.floor(absTime / 60)).padStart(2, '0');
+    const s = String(absTime % 60).padStart(2, '0');
+    const prefix = timeLeft < 0 ? '-' : '';
+    
+    const countdownDisplay = document.getElementById("countdownDisplay");
+
+    if (timeLeft < 0) {
+      // Cambiar a "Tiempo extra" y el color rojo cuando el tiempo es negativo
+      countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: red;'>Tiempo extra</div><div style='color: red;'>${prefix}${m}:${s}</div>`;
+    } else {
+      // Mantener "Tiempo restante" y color naranja cuando el tiempo es positivo
+      countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: orange;'>Tiempo restante</div><div style='color: var(--accent);'>${prefix}${m}:${s}</div>`;
     }
+  }
+
 
 
     function pauseTimer() {
