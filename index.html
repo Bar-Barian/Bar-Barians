@@ -192,14 +192,19 @@
 
     </div>
     <button id="startButton" onclick="goToWorkout()">GO</button>
-  </div>
+    <label style="margin-top: 0.5rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer;">
+      Añadir 10s de preparación
+      <input type="checkbox" id="prepToggle" checked style="accent-color: orange; transform: scale(1.2); cursor: pointer;">
+    </label>
+
+    </div>
 
   <div id="workoutScreen" class="screen">
     <div class="stats" id="exerciseList"></div>
     <div id="countdownDisplay"></div>
     <div class="timer-controls">
-      <button onclick="pauseTimer()">⏸️ Pausa</button>
-      <button onclick="resumeTimer()">▶️ Continuar</button>
+      <button id="pauseButton" onclick="pauseTimer()">⏸️ Pausa</button>
+      <button id="resumeButton" onclick="resumeTimer()">▶️ Continuar</button>
       <button onclick="resetTimer()">🔄 Reiniciar</button>
       <button onclick="goBack()">🔙 Atrás</button>
     </div>
@@ -233,13 +238,13 @@
     let timer;
     let timeLeft = 0;
     let prepTimer;
-let isPaused = false;
-let isPreparing = false;
-let prepRemaining = 0;
+    let isPaused = false;
+    let isPreparing = false;
+    let prepRemaining = 0;
 
 
     function renderStats() {
-  updateTimeDisplay();
+      updateTimeDisplay();
       const values = data[currentLevel];
       const html = `
         <div class="stat-block">Mu<span>${values[0]}</span></div>
@@ -261,41 +266,53 @@ let prepRemaining = 0;
       }
     }
 
+
     function changeTime(delta) {
-  let totalSeconds = timeInSeconds();
-  totalSeconds = Math.max(0, totalSeconds + delta);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  document.getElementById("minutes").value = minutes;
-  document.getElementById("seconds").value = seconds;
-  updateTimeDisplay();
-}
+      let totalSeconds = timeInSeconds();
+      totalSeconds = Math.max(0, totalSeconds + delta);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      document.getElementById("minutes").value = minutes;
+      document.getElementById("seconds").value = seconds;
+      updateTimeDisplay();
+    }
+
 
     function goToWorkout() {
       document.getElementById("setupScreen").classList.remove("active");
       document.getElementById("workoutScreen").classList.add("active");
-      document.getElementById("countdownDisplay").innerHTML = "<div style='font-size: 1.5rem;'>Preparación</div><div>10</div>";
-      preparationCountdown(10);
+
+      const usePreparation = document.getElementById("prepToggle").checked;
+      document.getElementById("resumeButton").disabled = true;
+      document.getElementById("pauseButton").disabled = false;
+
+      if (usePreparation) {
+        document.getElementById("countdownDisplay").innerHTML = "<div style='font-size: 1.5rem;'>Preparación</div><div>10</div>";
+        preparationCountdown(10);
+      } else {
+        startTimer();
+      }
     }
 
-	function preparationCountdown(seconds) {
-	  isPreparing = true;
-	  prepRemaining = seconds;
-	  clearInterval(timer);
-	  clearInterval(prepTimer);
-	  let count = seconds;
-	  prepTimer = setInterval(() => {
-	    if (isPaused) return;
-	    document.getElementById("countdownDisplay").innerHTML = `<div style='font-size: 1.5rem;'>Preparación</div><div>${count}</div>`;
-	    if (count === 0) {
-	      clearInterval(prepTimer);
- 	     isPreparing = false;
+
+    function preparationCountdown(seconds) {
+      isPreparing = true;
+      prepRemaining = seconds;
+      clearInterval(timer);
+      clearInterval(prepTimer);
+      let count = seconds;
+      prepTimer = setInterval(() => {
+        if (isPaused) return;
+        document.getElementById("countdownDisplay").innerHTML = `<div style='font-size: 1.5rem;'>Preparación</div><div>${count}</div>`;
+        if (count === 0) {
+          clearInterval(prepTimer);
+	     isPreparing = false;
  	     startTimer();
- 	   }
-	    count--;
-	    prepRemaining = count;
-	  }, 1000);
-	}
+     	   }
+        count--;
+        prepRemaining = count;
+      }, 1000);
+    }
 
 
     function startTimer() {
@@ -303,49 +320,66 @@ let prepRemaining = 0;
       const secs = parseInt(document.getElementById("seconds").value) || 0;
       timeLeft = mins * 60 + secs;
       updateDisplay();
-      timer = setInterval(() => {
-        timeLeft--;
-        updateDisplay();
-      }, 1000);
+      continueTimer();
     }
 
-  function updateDisplay() {
-    const absTime = Math.abs(timeLeft);
-    const m = String(Math.floor(absTime / 60)).padStart(2, '0');
-    const s = String(absTime % 60).padStart(2, '0');
-    const prefix = timeLeft < 0 ? '-' : '';
+
+    function updateDisplay() {
+      const absTime = Math.abs(timeLeft);
+      const m = String(Math.floor(absTime / 60)).padStart(2, '0');
+      const s = String(absTime % 60).padStart(2, '0');
+      const prefix = timeLeft < 0 ? '-' : '';
     
-    const countdownDisplay = document.getElementById("countdownDisplay");
+      const countdownDisplay = document.getElementById("countdownDisplay");
 
-    if (timeLeft < 0) {
-      // Cambiar a "Tiempo extra" y el color rojo cuando el tiempo es negativo
-      countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: red;'>Tiempo extra</div><div style='color: red;'>${prefix}${m}:${s}</div>`;
-    } else {
-      // Mantener "Tiempo restante" y color naranja cuando el tiempo es positivo
-      countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: orange;'>Tiempo restante</div><div style='color: var(--accent);'>${prefix}${m}:${s}</div>`;
+      if (timeLeft < 0) {
+        // Cambiar a "Tiempo extra" y el color rojo cuando el tiempo es negativo
+        countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: red;'>Tiempo extra</div><div style='color: red;'>${prefix}${m}:${s}</div>`;
+      } else {
+        // Mantener "Tiempo restante" y color naranja cuando el tiempo es positivo
+        countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: orange;'>Tiempo restante</div><div style='color: var(--accent);'>${prefix}${m}:${s}</div>`;
+      }
     }
-  }
-
 
 
     function pauseTimer() {
-  	isPaused = true;
-  	clearInterval(timer);
-  	clearInterval(prepTimer);
-	}
+      isPaused = true;
+      clearInterval(timer);
+      clearInterval(prepTimer);
+      document.getElementById("resumeButton").disabled = false;
+      document.getElementById("pauseButton").disabled = true;
+    }
+
 
     function resumeTimer() {
-  	isPaused = false;
-  	if (isPreparing) {
-    	preparationCountdown(prepRemaining);
-  	} else {
-    	startTimer();
-  	}
-	}
+      if (!isPaused) return; // Evita que se dispare si ya está corriendo
+      isPaused = false;
+      document.getElementById("resumeButton").disabled = true;
+      document.getElementById("pauseButton").disabled = false;
+
+      if (isPreparing) {
+        preparationCountdown(prepRemaining);
+      } else {
+        continueTimer();
+      }
+    }
+
+
+    function continueTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (!isPaused) {
+          timeLeft--;
+          updateDisplay();
+        }
+      }, 1000);
+    }
+
 
     function resetTimer() {
       goToWorkout();
     }
+
 
     function goBack() {
       clearInterval(timer);
@@ -354,20 +388,22 @@ let prepRemaining = 0;
       document.getElementById("setupScreen").classList.add("active");
     }
 
-    renderStats();
-  function updateTimeDisplay() {
-  const minutes = parseInt(document.getElementById("minutes").value) || 0;
-  const seconds = parseInt(document.getElementById("seconds").value) || 0;
-  const formatted = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-  const display = document.getElementById("time-display");
-  if (display) display.textContent = formatted;
-}
 
-function timeInSeconds() {
-  const minutes = parseInt(document.getElementById("minutes").value) || 0;
-  const seconds = parseInt(document.getElementById("seconds").value) || 0;
-  return minutes * 60 + seconds;
-}
+    renderStats();
+    function updateTimeDisplay() {
+      const minutes = parseInt(document.getElementById("minutes").value) || 0;
+      const seconds = parseInt(document.getElementById("seconds").value) || 0;
+      const formatted = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+      const display = document.getElementById("time-display");
+      if (display) display.textContent = formatted;
+    }
+
+
+    function timeInSeconds() {
+      const minutes = parseInt(document.getElementById("minutes").value) || 0;
+      const seconds = parseInt(document.getElementById("seconds").value) || 0;
+      return minutes * 60 + seconds;
+    }
 </script>
 </body>
 </html>
