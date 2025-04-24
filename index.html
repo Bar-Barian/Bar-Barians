@@ -152,6 +152,78 @@
       font-size: 1.2rem;
     }
 
+    #volumeContainer {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: white;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+
+    #volumeSlider {
+      appearance: none;
+      height: 6px;
+      border-radius: 5px;
+      background: linear-gradient(to right, orange 100%, #444 0%);
+      outline: none;
+      width: 150px;
+      transition: background 0.3s ease;
+      cursor: pointer;
+    }
+
+    #volumeSlider::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid orange;
+      cursor: pointer;
+    }
+
+    #volumeSlider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid orange;
+      cursor: pointer;
+    }
+
+    #volumeValue {
+      width: 40px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Estilos para el slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 150px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 5px;
+      outline: none;
+      vertical-align: middle;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
       .logo {
         max-width: 140px;
@@ -177,27 +249,29 @@
     <div class="stats" id="stats"></div>
     <div class="controls-column">
       <div class="control-row">
-  	<button onclick="changeLevel(-5)">▼</button>
-	<div id="percent" style="font-size: 2rem; color: var(--accent); width: 140px; text-align: center;">100%</div>
-  	<button onclick="changeLevel(5)">▲</button>
-	</div>
+        <button onclick="changeLevel(-5)">▼</button>
+        <div id="percent" style="font-size: 2rem; color: var(--accent); width: 140px; text-align: center;">100%</div>
+        <button onclick="changeLevel(5)">▲</button>
+      </div>
       <div class="control-row">
-  	<button onclick="changeTime(-30)">▼</button>
-  	<div id="time-display" style="font-size: 2rem; color: var(--accent); width: 140px; text-align: center;">05:00</div>
-  	<button onclick="changeTime(30)">▲</button>
-	</div>
-
-    <input type="hidden" id="minutes" value="5">
-    <input type="hidden" id="seconds" value="0">
-
+        <button onclick="changeTime(-30)">▼</button>
+        <div id="time-display" style="font-size: 2rem; color: var(--accent); width: 140px; text-align: center;">05:00</div>
+        <button onclick="changeTime(30)">▲</button>
+      </div>
+      <input type="hidden" id="minutes" value="5">
+      <input type="hidden" id="seconds" value="0">
     </div>
     <button id="startButton" onclick="goToWorkout()">GO</button>
     <label style="margin-top: 0.5rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer;">
       Añadir 10s de preparación
       <input type="checkbox" id="prepToggle" checked style="accent-color: orange; transform: scale(1.2); cursor: pointer;">
     </label>
-
+    <div id="volumeContainer">
+      Volumen:
+      <input type="range" id="volumeSlider" min="0" max="100" value="100" />
+      <div id="volumeValue">100%</div>
     </div>
+  </div>
 
   <div id="workoutScreen" class="screen">
     <div class="stats" id="exerciseList"></div>
@@ -242,6 +316,28 @@
     let isPreparing = false;
     let prepRemaining = 0;
 
+    const volumeSlider = document.getElementById("volumeSlider");
+    const volumeValue = document.getElementById("volumeValue");
+
+    // Creamos objetos de audio una vez cargue todo
+    const beep = new Audio("beep.mp3");
+    const beepFinal = new Audio("beep_final.mp3");
+
+    function updateVolumeSliderStyle(value) {
+      const percentage = value + "%";
+      volumeSlider.style.background = `linear-gradient(to right, orange ${value}%, #444 ${value}%)`;
+      volumeValue.textContent = percentage;
+    }
+
+    volumeSlider.addEventListener("input", () => {
+      const value = volumeSlider.value;
+      const fraction = value / 100;
+      beep.volume = fraction;
+      beepFinal.volume = fraction;
+      updateVolumeSliderStyle(value);
+    });
+
+    updateVolumeSliderStyle(volumeSlider.value);
 
     function renderStats() {
       updateTimeDisplay();
@@ -266,7 +362,6 @@
       }
     }
 
-
     function changeTime(delta) {
       let totalSeconds = timeInSeconds();
       totalSeconds = Math.max(0, totalSeconds + delta);
@@ -276,7 +371,6 @@
       document.getElementById("seconds").value = seconds;
       updateTimeDisplay();
     }
-
 
     function goToWorkout() {
       document.getElementById("setupScreen").classList.remove("active");
@@ -294,7 +388,6 @@
       }
     }
 
-
     function preparationCountdown(seconds) {
       isPreparing = true;
       prepRemaining = seconds;
@@ -304,16 +397,17 @@
       prepTimer = setInterval(() => {
         if (isPaused) return;
         document.getElementById("countdownDisplay").innerHTML = `<div style='font-size: 1.5rem;'>Preparación</div><div>${count}</div>`;
+        if (count <= 3 && count > 0) beep.play();
         if (count === 0) {
+          beepFinal.play();
           clearInterval(prepTimer);
-	     isPreparing = false;
- 	     startTimer();
-     	   }
-        count--;
+          isPreparing = false;
+          startTimer();
+        }
         prepRemaining = count;
+        count--;
       }, 1000);
     }
-
 
     function startTimer() {
       const mins = parseInt(document.getElementById("minutes").value) || 0;
@@ -323,24 +417,19 @@
       continueTimer();
     }
 
-
     function updateDisplay() {
       const absTime = Math.abs(timeLeft);
       const m = String(Math.floor(absTime / 60)).padStart(2, '0');
       const s = String(absTime % 60).padStart(2, '0');
       const prefix = timeLeft < 0 ? '-' : '';
-    
       const countdownDisplay = document.getElementById("countdownDisplay");
 
       if (timeLeft < 0) {
-        // Cambiar a "Tiempo extra" y el color rojo cuando el tiempo es negativo
         countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: red;'>Tiempo extra</div><div style='color: red;'>${prefix}${m}:${s}</div>`;
       } else {
-        // Mantener "Tiempo restante" y color naranja cuando el tiempo es positivo
         countdownDisplay.innerHTML = `<div style='font-size: 1.5rem; color: orange;'>Tiempo restante</div><div style='color: var(--accent);'>${prefix}${m}:${s}</div>`;
       }
     }
-
 
     function pauseTimer() {
       isPaused = true;
@@ -350,26 +439,22 @@
       document.getElementById("pauseButton").disabled = true;
     }
 
-
     function resumeTimer() {
-      if (!isPaused) return; // Evita que se dispare si ya está corriendo
+      if (!isPaused) return;
       isPaused = false;
       document.getElementById("resumeButton").disabled = true;
       document.getElementById("pauseButton").disabled = false;
-
-      if (isPreparing) {
-        preparationCountdown(prepRemaining);
-      } else {
-        continueTimer();
-      }
+      if (isPreparing) preparationCountdown(prepRemaining);
+      else continueTimer();
     }
-
 
     function continueTimer() {
       clearInterval(timer);
       timer = setInterval(() => {
         if (!isPaused) {
           timeLeft--;
+          if (timeLeft <= 3 && timeLeft > 0) beep.play();
+          if (timeLeft === 0) beepFinal.play();
           updateDisplay();
         }
       }, 1000);
@@ -380,7 +465,6 @@
       goToWorkout();
     }
 
-
     function goBack() {
       clearInterval(timer);
       clearInterval(prepTimer);
@@ -388,22 +472,20 @@
       document.getElementById("setupScreen").classList.add("active");
     }
 
-
-    renderStats();
     function updateTimeDisplay() {
       const minutes = parseInt(document.getElementById("minutes").value) || 0;
       const seconds = parseInt(document.getElementById("seconds").value) || 0;
       const formatted = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-      const display = document.getElementById("time-display");
-      if (display) display.textContent = formatted;
+      document.getElementById("time-display").textContent = formatted;
     }
-
 
     function timeInSeconds() {
       const minutes = parseInt(document.getElementById("minutes").value) || 0;
       const seconds = parseInt(document.getElementById("seconds").value) || 0;
       return minutes * 60 + seconds;
     }
-</script>
+
+    renderStats();
+  </script>
 </body>
 </html>
