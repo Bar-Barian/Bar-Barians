@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bar-Barians</title>
@@ -19,11 +20,12 @@
       padding: 0;
       background-color: var(--main-bg);
       color: var(--text-color);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Rajdhani', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+
 
     header {
       text-align: center;
@@ -249,15 +251,24 @@
     <div class="stats" id="stats"></div>
     <div class="controls-column">
       <div class="control-row">
-        <button onclick="changeLevel(-5)">▼</button>
+        <button onclick="changeLevel(-5)">
+          <img src="Down.png" alt="Down" style="width: 26px; height: 26px;" />
+        </button>
         <div id="percent" style="font-size: 2rem; color: var(--accent); width: 140px; text-align: center;">100%</div>
-        <button onclick="changeLevel(5)">▲</button>
+        <button onclick="changeLevel(5)">
+          <img src="Up.png" alt="Up" style="width: 26px; height: 26px;" />
+        </button>
       </div>
       <div class="control-row">
-        <button onclick="changeTime(-30)">▼</button>
+        <button onclick="changeTime(-30)">
+          <img src="Down.png" alt="Down" style="width: 26px; height: 26px;" />
+        </button>
         <div id="time-display" style="font-size: 2rem; color: var(--accent); width: 140px; text-align: center;">05:00</div>
-        <button onclick="changeTime(30)">▲</button>
+        <button onclick="changeTime(30)">
+          <img src="Up.png" alt="Up" style="width: 26px; height: 26px;" />
+        </button>
       </div>
+
       <input type="hidden" id="minutes" value="5">
       <input type="hidden" id="seconds" value="0">
     </div>
@@ -283,6 +294,19 @@
       <button onclick="goBack()">🔙 Atrás</button>
     </div>
   </div>
+
+  <div id="confirmOverlay" style="display: none; position: fixed; top: 0; left: 0; 
+    width: 100%; height: 100%; background: rgba(0,0,0,0.7); 
+    align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: #222; color: white; padding: 2rem; border-radius: 15px; text-align: center; max-width: 90%; width: 300px;">
+      <p id="confirmMessage" style="font-size: 1.3rem; margin-bottom: 1.5rem;">¿Quieres reiniciar?</p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button id="confirmYes" style="padding: 0.7rem 1.5rem; font-size: 1rem; background-color: orange; border-radius: 10px; cursor: pointer;">Sí</button>
+        <button id="confirmNo" style="padding: 0.7rem 1.5rem; font-size: 1rem; background-color: grey; border-radius: 10px; cursor: pointer;">No</button>
+      </div>
+    </div>
+  </div>
+
 
   <script>
     const data = {
@@ -315,6 +339,7 @@
     let isPaused = false;
     let isPreparing = false;
     let prepRemaining = 0;
+    let confirmAction = null;
 
     const volumeSlider = document.getElementById("volumeSlider");
     const volumeValue = document.getElementById("volumeValue");
@@ -464,14 +489,18 @@
 
 
     function resetTimer() {
-      goToWorkout();
+      showConfirmation("¿Quieres reiniciar?", () => {
+        goToWorkout();
+      });
     }
 
     function goBack() {
-      clearInterval(timer);
-      clearInterval(prepTimer);
-      document.getElementById("workoutScreen").classList.remove("active");
-      document.getElementById("setupScreen").classList.add("active");
+      showConfirmation("¿Quieres volver?", () => {
+        clearInterval(timer);
+        clearInterval(prepTimer);
+        document.getElementById("workoutScreen").classList.remove("active");
+        document.getElementById("setupScreen").classList.add("active");
+      });
     }
 
     function updateTimeDisplay() {
@@ -486,6 +515,24 @@
       const seconds = parseInt(document.getElementById("seconds").value) || 0;
       return minutes * 60 + seconds;
     }
+
+
+    //Confirmación reinicio
+    function showConfirmation(message, onConfirm) {
+      document.getElementById("confirmMessage").textContent = message;
+      document.getElementById("confirmOverlay").style.display = "flex";
+      confirmAction = onConfirm;
+    }
+
+    document.getElementById("confirmYes").onclick = () => {
+      document.getElementById("confirmOverlay").style.display = "none";
+      if (confirmAction) confirmAction();
+    };
+
+    document.getElementById("confirmNo").onclick = () => {
+      document.getElementById("confirmOverlay").style.display = "none";
+      confirmAction = null;
+    };
 
     renderStats();
   </script>
